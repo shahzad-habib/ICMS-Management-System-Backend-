@@ -46,6 +46,7 @@ app.get('/', (req, res) => {
 // ─── API Routes ───────────────────────────────────────────────────────────────
 // TODO: Uncomment as each route module is implemented
 app.use('/api/auth',       require('./routes/authRoutes'));
+app.use('/auth',           require('./routes/authRoutes')); // Fallback alias
 app.use('/api/user',       require('./routes/userRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/leaves',     require('./routes/leaveRoutes'));
