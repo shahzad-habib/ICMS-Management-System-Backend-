@@ -35,6 +35,14 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
+// ─── Base Route ─────────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'Welcome to the ICMS Backend API! 🚀',
+    healthCheck: '/api/health'
+  });
+});
+
 // ─── API Routes ───────────────────────────────────────────────────────────────
 // TODO: Uncomment as each route module is implemented
 app.use('/api/auth',       require('./routes/authRoutes'));
