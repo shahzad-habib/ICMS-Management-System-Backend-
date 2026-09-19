@@ -34,6 +34,7 @@ const limiter = rateLimit({
   message: { message: 'Too many requests, please try again later.' },
 });
 app.use('/api', limiter);
+app.use('/auth', limiter);
 
 // ─── Base Route ─────────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
@@ -43,13 +44,24 @@ app.get('/', (req, res) => {
   });
 });
 
-// ─── API Routes ───────────────────────────────────────────────────────────────
+// ─── API Routes (supporting both /api/* and /* aliases) ──────────────────────
 app.use('/api/auth',       require('./routes/authRoutes'));
+app.use('/auth',           require('./routes/authRoutes'));
+
 app.use('/api/user',       require('./routes/userRoutes'));
+app.use('/user',           require('./routes/userRoutes'));
+
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
+app.use('/attendance',     require('./routes/attendanceRoutes'));
+
 app.use('/api/leaves',     require('./routes/leaveRoutes'));
+app.use('/leaves',         require('./routes/leaveRoutes'));
+
 app.use('/api/admin',      require('./routes/adminRoutes'));
+app.use('/admin',          require('./routes/adminRoutes'));
+
 app.use('/api/settings',   require('./routes/settingsRoutes'));
+app.use('/settings',       require('./routes/settingsRoutes'));
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
