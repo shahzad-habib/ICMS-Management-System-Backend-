@@ -149,7 +149,11 @@ const getMyRecords = async (req, res) => {
 // @access  Private (Admin)
 const getAllAttendance = async (req, res) => {
   try {
-    const { date, month, year, status, teacherId, search } = req.query;
+    const { date, month, year, status, teacherId, search, page = 1, limit = 100 } = req.query;
+    const pageNum = Math.max(1, parseInt(page, 10));
+    const limitNum = Math.min(500, Math.max(1, parseInt(limit, 10))); // cap at 500
+    const skip = (pageNum - 1) * limitNum;
+
     let query = {};
 
     if (date) {
@@ -171,9 +175,11 @@ const getAllAttendance = async (req, res) => {
 
     let records = await Attendance.find(query)
       .populate('teacherId', 'name employeeId department phone')
-      .sort({ date: -1, createdAt: -1 });
+      .sort({ date: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
 
-    // Filter by search query if present
+    // Filter by search query if present (post-populate filter)
     if (search && search.trim()) {
       const term = search.toLowerCase().trim();
       records = records.filter((r) => {
@@ -184,7 +190,17 @@ const getAllAttendance = async (req, res) => {
       });
     }
 
-    res.status(200).json(records);
+    const total = await Attendance.countDocuments(query);
+
+    res.status(200).json({
+      records,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching all attendance', error: error.message });
   }

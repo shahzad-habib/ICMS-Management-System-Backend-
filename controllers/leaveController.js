@@ -11,6 +11,18 @@ const applyLeave = async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
+    // Validate that startDate is not after endDate
+    if (new Date(startDate) > new Date(endDate)) {
+      return res.status(400).json({ message: 'Start date cannot be after end date.' });
+    }
+
+    // Prevent applying for leaves in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (new Date(startDate) < today) {
+      return res.status(400).json({ message: 'Leave start date cannot be in the past.' });
+    }
+
     const leave = await Leave.create({
       teacherId: req.user._id,
       startDate,

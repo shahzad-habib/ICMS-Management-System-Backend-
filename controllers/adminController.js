@@ -302,7 +302,15 @@ const toggleTeacherStatus = async (req, res) => {
 
     res.status(200).json({
       message: `Teacher ${teacher.isActive ? 'activated' : 'deactivated'} successfully`,
-      teacher,
+      teacher: {
+        _id: teacher._id,
+        name: teacher.name,
+        employeeId: teacher.employeeId,
+        department: teacher.department,
+        phone: teacher.phone,
+        role: teacher.role,
+        isActive: teacher.isActive,
+      },
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
