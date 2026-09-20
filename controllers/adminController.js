@@ -317,6 +317,31 @@ const toggleTeacherStatus = async (req, res) => {
   }
 };
 
+// @desc    Delete a teacher and cascade clean their attendance and leave records
+// @route   DELETE /api/admin/teachers/:id
+// @access  Private (Admin)
+const deleteTeacher = async (req, res) => {
+  try {
+    const teacher = await User.findOneAndDelete({ _id: req.params.id, role: 'Teacher' });
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
+
+    // Cascade delete associated records concurrently to maintain database integrity
+    await Promise.all([
+      Attendance.deleteMany({ teacherId: req.params.id }),
+      Leave.deleteMany({ teacherId: req.params.id }),
+    ]);
+
+    res.status(200).json({
+      message: `Teacher ${teacher.name} (${teacher.employeeId}) deleted successfully`,
+      deletedId: req.params.id,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error deleting teacher', error: error.message });
+  }
+};
+
 module.exports = {
   markManualAttendance,
   getSettings,
@@ -326,4 +351,5 @@ module.exports = {
   getAllTeachers,
   updateTeacher,
   toggleTeacherStatus,
+  deleteTeacher,
 };

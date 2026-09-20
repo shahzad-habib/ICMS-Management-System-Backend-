@@ -9,6 +9,7 @@ const {
   getAllTeachers,
   updateTeacher,
   toggleTeacherStatus,
+  deleteTeacher,
 } = require('../controllers/adminController');
 const {
   getAllAttendance,
@@ -39,5 +40,6 @@ router.post('/teachers', createTeacher);
 router.get('/teachers', getAllTeachers);
 router.patch('/teachers/:id', updateTeacher);
 router.patch('/teachers/:id/status', toggleTeacherStatus);
+router.delete('/teachers/:id', deleteTeacher);
 
 module.exports = router;
