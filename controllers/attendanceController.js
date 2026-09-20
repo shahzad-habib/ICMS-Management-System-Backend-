@@ -25,7 +25,7 @@ const checkIn = async (req, res) => {
     });
 
     if (existingRecord) {
-      return res.status(400).json({ message: 'You have already checked in for today.' });
+      return res.status(400).json({ message: 'You have already signed in for today.' });
     }
 
     // Extract client IP (checking x-forwarded-for first for proxies)
@@ -44,7 +44,7 @@ const checkIn = async (req, res) => {
   } catch (error) {
     // Handle potential duplicate key error from MongoDB index
     if (error.code === 11000) {
-      return res.status(400).json({ message: 'You have already checked in for today.' });
+      return res.status(400).json({ message: 'You have already signed in for today.' });
     }
     res.status(500).json({ message: 'Server error during check-in', error: error.message });
   }
@@ -96,16 +96,24 @@ const checkOut = async (req, res) => {
       return res.status(400).json({ message: 'Check-out reason is mandatory.' });
     }
 
-    // Calculate the final status:
-    // - Less than half-day threshold is considered Half Day
-    // - Extremely short time (< halfDayThreshold / 2) is considered Absent
-    // - Equal or more is considered Present
+    // ─── RELAXED AUTO-STATUS LOGIC ───────────────────────────────────────────
+    // Policy (Phase 1): Any user who signs in is treated as 'Present'.
+    // Hours are still calculated for payroll accuracy, but the status badge
+    // will NOT be automatically downgraded to Absent or Half Day.
+    // Admin can override status manually via PATCH /api/admin/attendance/:id/status.
     let finalStatus = 'Present';
-    if (workingHours > 0 && workingHours < (halfDayThreshold / 2)) {
-      finalStatus = 'Absent';
-    } else if (workingHours < halfDayThreshold) {
-      finalStatus = 'Half Day';
-    }
+
+    /* ── STRICT_AUTO_STATUS_FEATURE_FLAG (disabled) ────────────────────────
+     * To re-enable time-based auto-status, remove the block above and
+     * uncomment the block below:
+     *
+     * let finalStatus = 'Present';
+     * if (workingHours > 0 && workingHours < (halfDayThreshold / 2)) {
+     *   finalStatus = 'Absent';
+     * } else if (workingHours < halfDayThreshold) {
+     *   finalStatus = 'Half Day';
+     * }
+     * ─────────────────────────────────────────────────────────────────────── */
 
     // Update the record
     attendance.checkOutTime = now;
@@ -276,10 +284,43 @@ const exportAttendanceCSV = async (req, res) => {
   }
 };
 
+// @desc    Admin: Override status of a specific attendance record
+// @route   PATCH /api/admin/attendance/:id/status
+// @access  Private (Admin)
+const overrideAttendanceStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const ALLOWED_STATUSES = ['Present', 'Absent', 'Leave'];
+
+    if (!status || !ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({
+        message: `Invalid status. Must be one of: ${ALLOWED_STATUSES.join(', ')}.`,
+      });
+    }
+
+    // Lean atomic update — only touches the status field.
+    // No fetch → modify → save round-trip; prevents version conflicts.
+    const updated = await Attendance.findByIdAndUpdate(
+      req.params.id,
+      { $set: { status } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Attendance record not found.' });
+    }
+
+    res.status(200).json({ message: 'Status updated successfully.', attendance: updated });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error updating status.', error: error.message });
+  }
+};
+
 module.exports = {
   checkIn,
   checkOut,
   getMyRecords,
   getAllAttendance,
   exportAttendanceCSV,
+  overrideAttendanceStatus,
 };

@@ -13,6 +13,7 @@ const {
 const {
   getAllAttendance,
   exportAttendanceCSV,
+  overrideAttendanceStatus,
 } = require('../controllers/attendanceController');
 const { protect } = require('../middleware/authMiddleware');
 const { isAdmin } = require('../middleware/roleCheck');
@@ -27,6 +28,7 @@ router.get('/dashboard/stats', getDashboardStats);
 router.get('/attendance', getAllAttendance);
 router.get('/attendance/export', exportAttendanceCSV);
 router.post('/attendance/manual', markManualAttendance);
+router.patch('/attendance/:id/status', overrideAttendanceStatus);
 
 // Settings
 router.get('/settings', getSettings);
